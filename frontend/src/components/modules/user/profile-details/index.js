@@ -20,7 +20,7 @@ function ProfileDetails() {
       navigate("/auth/login");
     }
 
-    return () => {};
+    return () => { };
   }, [isAuthenticated, navigate]);
 
   return (
@@ -77,7 +77,7 @@ function ProfileDetails() {
                 )}
 
                 <div className="actions">
-                  <Link to="/user/orders">
+                  <Link to="/orders">
                     My Orders <BiRightArrowAlt />{" "}
                   </Link>
                   <Link to="/auth/password/update">

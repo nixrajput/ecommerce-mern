@@ -33,11 +33,23 @@ exports.runApp = () => {
   });
 
   // SETTING STATIC WEB PATH
-  app.use(express.static(path.join(__dirname, "../frontend/build")));
 
-  app.get("/", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "../frontend/build/index.html"));
-  });
+  var options = {
+    dotfiles: 'ignore',
+    etag: false,
+    extensions: ['htm', 'html', 'css', 'js', 'ico', 'jpg', 'jpeg', 'png', 'svg'],
+    index: ['index.html'],
+    maxAge: '1m',
+    redirect: false
+  }
+
+  app.use(express.static(path.join(__dirname, "../frontend/build"), options));
+
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'prod') {
+    app.get("*", (req, res) => {
+      res.sendFile(path.resolve(__dirname, "../frontend/build/index.html"));
+    });
+  }
 
   return app;
 };
@@ -45,10 +57,4 @@ exports.runApp = () => {
 exports.closeApp = (app) => {
   // Middleware for Errors
   app.use(errorMiddleware);
-  app.use("*", (req, res, next) => {
-    res.status(404).json({
-      success: false,
-      message: "API endpoint not found.",
-    });
-  });
 };

@@ -25,7 +25,7 @@ function Home() {
     }
 
     dispatch(getProducts());
-    return () => {};
+    return () => { };
   }, [dispatch, error, alert]);
 
   return (
@@ -39,7 +39,7 @@ function Home() {
           {loading ? (
             <Loader />
           ) : (
-            products.map((product, i) => {
+            products && products.map((product, i) => {
               return <ProductCard key={i} product={product} />;
             })
           )}

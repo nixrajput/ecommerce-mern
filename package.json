@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node ./backend/server.js",
     "dev": "nodemon ./backend/server.js",
-    "preinstall": "npm install --prefix ./frontend && npm run build --prefix ./frontend && cd frontend && rm -r node_modules"
+    "preinstall": "cd frontend && npm install && npm run build && rm -r node_modules"
   },
   "author": "Nikhil Rajput",
   "license": "GPL-3.0",

@@ -67,10 +67,6 @@ cd frontend
 npm start
 ```
 
-## Website
-
-[Website Link](https://dark-puce-lemur-belt.cyclic.app)
-
 ## Connect With Me
 
 [<img align="left" alt="nixrajput | Website" width="24px" src="https://raw.githubusercontent.com/nixrajput/nixlab-files/master/images/icons/globe-icon.svg" />][website]

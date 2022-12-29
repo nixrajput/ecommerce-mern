@@ -7,7 +7,7 @@ const app = runApp();
 
 (async () => {
   // Config
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "prod") {
     require("dotenv").config({
       path: "backend/config/config.env",
     });

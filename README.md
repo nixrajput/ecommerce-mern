@@ -11,7 +11,11 @@ An E-commerce Web App developed using MERN stack where user can buy and checkout
 - Add Review
 - Add Rating
 
-## Usage
+## Website
+
+The website is hosted at [nixlab-shop.cyclic.app](https://snixlab-shop.cyclic.app).
+
+## Setup
 
 - Clone the repository
 
@@ -80,7 +84,6 @@ npm start
 [<img align="left" alt="nixrajput | Twitter" width="24px" src="https://raw.githubusercontent.com/nixrajput/nixlab-files/master/images/icons/twitter-brands.svg" />][twitter]
 
 [<img align="left" alt="nixrajput | LinkedIn" width="24px" src="https://raw.githubusercontent.com/nixrajput/nixlab-files/master/images/icons/linkedin-in-brands.svg" />][linkedin]
-
 
 [github]: https://github.com/nixrajput
 [website]: https://nixlab.co.in

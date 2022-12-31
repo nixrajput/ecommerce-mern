@@ -13,7 +13,7 @@ An E-commerce Web App developed using MERN stack where user can buy and checkout
 
 ## Website
 
-The website is hosted at [nixlab-shop.cyclic.app](https://snixlab-shop.cyclic.app).
+The website is hosted at [nixlab-shop.cyclic.app](https://nixlab-shop.cyclic.app).
 
 ## Setup
 

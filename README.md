@@ -2,6 +2,16 @@
 
 An E-commerce Web App developed using MERN stack where user can buy and checkout product with ease and add their review and rating for the products.
 
+[![Stars](https://img.shields.io/github/stars/nixrajput/ecommerce-mern?label=Stars)][repo]
+[![Forks](https://img.shields.io/github/forks/nixrajput/ecommerce-mern?label=Forks)][repo]
+[![Watchers](https://img.shields.io/github/watchers/nixrajput/ecommerce-mern?label=Watchers)][repo]
+[![Contributors](https://img.shields.io/github/contributors/nixrajput/ecommerce-mern?label=Contributors)][repo]
+
+[![GitHub last commit](https://img.shields.io/github/last-commit/nixrajput/ecommerce-mern?label=Last+Commit)][repo]
+[![GitHub issues](https://img.shields.io/github/issues/nixrajput/ecommerce-mern?label=Issues)][issues]
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/nixrajput/ecommerce-mern?label=Pull+Requests)][pulls]
+[![GitHub Licence](https://img.shields.io/github/license/nixrajput/ecommerce-mern?label=Licence)][license]
+
 ## Features
 
 - User Authentication
@@ -71,23 +81,24 @@ cd frontend
 npm start
 ```
 
+## Activities
+
+![Alt](https://repobeats.axiom.co/api/embed/04e548c478a20ba97a199265dc0e5659137489a3.svg "Repobeats analytics image")
+
 ## Connect With Me
 
-[<img align="left" alt="nixrajput | Website" width="24px" src="https://raw.githubusercontent.com/nixrajput/nixlab-files/master/images/icons/globe-icon.svg" />][website]
-
-[<img align="left" alt="nixrajput | GitHub" width="24px" src="https://raw.githubusercontent.com/nixrajput/nixlab-files/master/images/icons/github-brands.svg" />][github]
-
-[<img align="left" alt="nixrajput | Instagram" width="24px" src="https://raw.githubusercontent.com/nixrajput/nixlab-files/master/images/icons/instagram-brands.svg" />][instagram]
-
-[<img align="left" alt="nixrajput | Facebook" width="24px" src="https://raw.githubusercontent.com/nixrajput/nixlab-files/master/images/icons/facebook-brands.svg" />][facebook]
-
-[<img align="left" alt="nixrajput | Twitter" width="24px" src="https://raw.githubusercontent.com/nixrajput/nixlab-files/master/images/icons/twitter-brands.svg" />][twitter]
-
-[<img align="left" alt="nixrajput | LinkedIn" width="24px" src="https://raw.githubusercontent.com/nixrajput/nixlab-files/master/images/icons/linkedin-in-brands.svg" />][linkedin]
+[![Instagram: nixrajput](https://img.shields.io/badge/nixrajput-141430?logo=Instagram&logoColor=fff)][instagram]
+[![Linkedin: nixrajput](https://img.shields.io/badge/nixrajput-141430?logo=Linkedin&logoColor=fff)][linkedin]
+[![GitHub: nixrajput](https://img.shields.io/badge/nixrajput-141430?logo=Github&logoColor=fff)][github]
+[![Twitter: nixrajput07](https://img.shields.io/badge/nixrajput07-141430?logo=Twitter&logoColor=fff)][twitter]
+[![Facebook: nixrajput07](https://img.shields.io/badge/nixrajput07-141430?logo=Facebook&logoColor=fff)][facebook]
 
 [github]: https://github.com/nixrajput
-[website]: https://nixlab.co.in
 [facebook]: https://facebook.com/nixrajput07
 [twitter]: https://twitter.com/nixrajput07
 [instagram]: https://instagram.com/nixrajput
 [linkedin]: https://linkedin.com/in/nixrajput
+[repo]: https://github.com/nixrajput/ecommerce-mern
+[issues]: https://github.com/nixrajput/ecommerce-mern/issues
+[pulls]: https://github.com/nixrajput/ecommerce-mern/pulls
+[license]: https://github.com/nixrajput/ecommerce-mern/blob/master/LICENSE.md

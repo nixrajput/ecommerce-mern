@@ -49,6 +49,11 @@ jobs:
           node-version: lts/*
           cache: ${{ steps.pm.outputs.pm }}
 
+      # This repo's package.json scripts (build/start/dev) shell out to `bun`,
+      # so ensure the bun runtime is on PATH even when the package manager is pnpm.
+      - if: steps.pm.outputs.pm != 'bun'
+        uses: oven-sh/setup-bun@v2
+
       - name: Install
         run: |
           case "${{ steps.pm.outputs.pm }}" in

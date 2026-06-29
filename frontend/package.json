@@ -37,9 +37,10 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "DISABLE_ESLINT_PLUGIN=true react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "clean": "node -e \"require('fs').rmSync('build',{recursive:true,force:true})\""
   },
   "eslintConfig": {
     "extends": [

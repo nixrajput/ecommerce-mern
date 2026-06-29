@@ -1,0 +1,45 @@
+name: Version Check
+
+# Every PR into the default branch must bump package.json "version". The Release
+# workflow turns that version into a tag + GitHub Release on merge.
+on:
+  pull_request:
+    branches: ["master"]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  version-bumped:
+    name: version bumped
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # need the base branch to diff the version
+          persist-credentials: false
+      - name: Read versions
+        id: v
+        run: |
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          pr=$(jq -r .version package.json)
+          base=$(git show "origin/${{ github.base_ref }}:package.json" | jq -r .version)
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+      - name: Compare
+        env:
+          PR: ${{ steps.v.outputs.pr }}
+          BASE: ${{ steps.v.outputs.base }}
+        run: |
+          echo "base=$BASE  pr=$PR"
+          if [ "$PR" = "$BASE" ]; then
+            echo "::error::package.json version not bumped (still $BASE). Bump it: patch for fixes, minor for features, major for breaking."
+            exit 1
+          fi
+          greater=$(printf '%s\n%s\n' "$BASE" "$PR" | sort -V | tail -n1)
+          if [ "$greater" != "$PR" ]; then
+            echo "::error::package.json version $PR is lower than base $BASE; it must move forward."
+            exit 1
+          fi
+          echo "Version bumped $BASE -> $PR ✓"

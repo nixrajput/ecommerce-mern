@@ -1,6 +1,6 @@
 {
   "name": "ecommerce-mern",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An E-commerce Website developed using MERN stack where user can buy and checkout product with ease and add their review and rating for the products.",
   "main": "./backend/server.js",
   "scripts": {

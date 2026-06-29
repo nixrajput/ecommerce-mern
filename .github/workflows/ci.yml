@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    # Dummy build-time env so steps like `next build` that read env at build
+    # succeed in CI (same approach as portfolio-nextjs). Add this repo's
+    # build-time vars here with placeholder values.
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # Detect the package manager from the lockfile so one workflow serves
+      # pnpm / npm / yarn / bun repos.
+      - name: Detect package manager
+        id: pm
+        run: |
+          if [ -f bun.lockb ] || [ -f bun.lock ]; then echo "pm=bun" >> "$GITHUB_OUTPUT"
+          elif [ -f pnpm-lock.yaml ]; then echo "pm=pnpm" >> "$GITHUB_OUTPUT"
+          elif [ -f yarn.lock ]; then echo "pm=yarn" >> "$GITHUB_OUTPUT"
+          else echo "pm=npm" >> "$GITHUB_OUTPUT"; fi
+
+      - if: steps.pm.outputs.pm == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - if: steps.pm.outputs.pm == 'bun'
+        uses: oven-sh/setup-bun@v2
+      - if: steps.pm.outputs.pm != 'bun'
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: ${{ steps.pm.outputs.pm }}
+
+      - name: Install
+        run: |
+          case "${{ steps.pm.outputs.pm }}" in
+            bun) bun install --frozen-lockfile ;;
+            pnpm) pnpm install --frozen-lockfile ;;
+            yarn) yarn install --frozen-lockfile ;;
+            npm) npm ci ;;
+          esac
+
+      # Run a script only if package.json defines it, so repos missing lint/
+      # build/test don't fail the job. `run_if` echoes then runs via the pm.
+      - name: Run available scripts (lint, ts:check, build, test)
+        env:
+          PM: ${{ steps.pm.outputs.pm }}
+        run: |
+          has() { jq -e --arg s "$1" '.scripts[$s] // empty' package.json >/dev/null 2>&1; }
+          run() {
+            case "$PM" in
+              bun) bun run "$1" ;;
+              *) "$PM" run "$1" ;;
+            esac
+          }
+          for script in lint ts:check typecheck build test; do
+            if has "$script"; then
+              echo "::group::$script"; run "$script"; echo "::endgroup::"
+            else
+              echo "skip: no \"$script\" script"
+            fi
+          done

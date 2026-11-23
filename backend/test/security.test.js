@@ -1,6 +1,7 @@
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
 
 require("../helpers/connectDB");
 const { runApp, closeApp } = require("../app");
@@ -8,6 +9,8 @@ const initModules = require("../initModules");
 const errorMiddleware = require("../middlewares/error");
 const ApiFeatures = require("../utils/apiFeatures");
 const Product = require("../modules/product/models/productModel");
+const User = require("../modules/user/models/userModel");
+const { isAuthenticatedUser } = require("../middlewares/auth");
 const { readImages } = require("../modules/product/controllers");
 const { readCartItems, priceOrder } = require("../modules/order/controllers");
 
@@ -143,4 +146,24 @@ test("order totals come from database prices, not the request", () => {
   assert.equal(totals.taxPrice, 270);
   assert.equal(totals.totalPrice, 1770);
   assert.equal(totals.orderItems[0].price, 500);
+});
+
+test("tokens issued before a password change are rejected", async () => {
+  process.env.JWT_SECRET = "zz-dummy-test-secret";
+  const findById = User.findById;
+  User.findById = async () => ({ role: "user", passwordChangedAt: new Date(2_000_000_000) });
+
+  const authenticate = (iat) =>
+    new Promise((resolve) => {
+      const token = jwt.sign({ id: "x", iat }, process.env.JWT_SECRET);
+      const req = { headers: { authorization: `Bearer ${token}` } };
+      isAuthenticatedUser(req, {}, (err) => resolve(err));
+    });
+
+  try {
+    assert.equal((await authenticate(1_999_999)).statusCode, 401);
+    assert.equal(await authenticate(2_000_001), undefined);
+  } finally {
+    User.findById = findById;
+  }
 });

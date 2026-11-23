@@ -11,10 +11,8 @@ const errorMiddleware = require("./middlewares/error");
 exports.runApp = () => {
   const app = express();
 
-  // Number of proxy hops in front of the app, so rate limits see the client IP.
-  if (process.env.TRUST_PROXY) {
-    app.set("trust proxy", Number(process.env.TRUST_PROXY));
-  }
+  // Proxy hops in front of the app (default 1), so rate limits key on the client IP. Never `true`: clients could spoof it.
+  app.set("trust proxy", Number(process.env.TRUST_PROXY ?? 1));
 
   app.use(
     helmet({

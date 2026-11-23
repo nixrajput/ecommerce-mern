@@ -51,25 +51,17 @@ const priceOrder = (cartItems, products) => {
   return { orderItems, itemsPrice, taxPrice, shippingPrice, totalPrice };
 };
 
-exports.readCartItems = readCartItems;
-exports.priceOrder = priceOrder;
-
-// Create New Order
-exports.createNewOrder = catchAsyncError(async (req, res, next) => {
-  const { shippingInfo, paymentInfo } = req.body;
-  const cartItems = readCartItems(req.body.orderItems);
+// Returns { totals } priced from the database, or { error } when the cart is invalid.
+const priceCart = async (items) => {
+  const cartItems = readCartItems(items);
 
   if (!cartItems) {
-    return next(
-      new ErrorHandler(
+    return {
+      error: new ErrorHandler(
         `Send 1 to ${MAX_ORDER_ITEMS} order items, each with a product and a quantity.`,
         400
-      )
-    );
-  }
-
-  if (typeof paymentInfo?.id !== "string" || !paymentInfo.id) {
-    return next(new ErrorHandler("Payment information is missing.", 400));
+      ),
+    };
   }
 
   const productIds = [...new Set(cartItems.map((item) => item.product))];
@@ -78,10 +70,29 @@ exports.createNewOrder = catchAsyncError(async (req, res, next) => {
   });
 
   if (products.length !== productIds.length) {
-    return next(new ErrorHandler("Product not found.", 404));
+    return { error: new ErrorHandler("Product not found.", 404) };
   }
 
-  const totals = priceOrder(cartItems, products);
+  return { totals: priceOrder(cartItems, products) };
+};
+
+exports.readCartItems = readCartItems;
+exports.priceOrder = priceOrder;
+exports.priceCart = priceCart;
+
+// Create New Order
+exports.createNewOrder = catchAsyncError(async (req, res, next) => {
+  const { shippingInfo, paymentInfo } = req.body;
+
+  if (typeof paymentInfo?.id !== "string" || !paymentInfo.id) {
+    return next(new ErrorHandler("Payment information is missing.", 400));
+  }
+
+  const { totals, error } = await priceCart(req.body.orderItems);
+
+  if (error) {
+    return next(error);
+  }
 
   if (await Order.exists({ "paymentInfo.id": paymentInfo.id })) {
     return next(new ErrorHandler("This payment is already used.", 400));
@@ -92,6 +103,7 @@ exports.createNewOrder = catchAsyncError(async (req, res, next) => {
 
   if (
     paymentIntent.status !== "succeeded" ||
+    paymentIntent.metadata?.user !== req.user._id.toString() ||
     paymentIntent.currency !== "inr" ||
     paymentIntent.amount !== Math.round(totals.totalPrice * 100)
   ) {

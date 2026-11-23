@@ -1,21 +1,23 @@
 const catchAsyncError = require("../../../middlewares/catchAsyncError");
-const ErrorHandler = require("../../../utils/errorHandler");
 const getStripe = require("../../../utils/stripe");
+const { priceCart } = require("../../order/controllers");
 
 // Process Payment
 exports.createPayment = catchAsyncError(async (req, res, next) => {
-  const amount = Number(req.body.amount);
+  // The amount comes from database prices, never from the request.
+  const { totals, error } = await priceCart(req.body.orderItems);
 
-  if (!Number.isInteger(amount) || amount <= 0) {
-    return next(new ErrorHandler("Invalid payment amount.", 400));
+  if (error) {
+    return next(error);
   }
 
   const myPayment = await getStripe().paymentIntents.create({
-    amount,
+    amount: Math.round(totals.totalPrice * 100),
     currency: "inr",
     receipt_email: req.user.email,
     metadata: {
       company: "NixLab Shop",
+      user: req.user._id.toString(),
     },
   });
 

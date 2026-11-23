@@ -130,8 +130,12 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
 
   const user = await User.findOne({ email: email });
 
+  // Same answer for known and unknown emails, so the form cannot list accounts.
+  const sentMessage =
+    "If an account exists for this email, we sent a password reset link.";
+
   if (!user) {
-    return next(new ErrorHandler("User not found.", 404));
+    return res.status(200).json({ success: true, message: sentMessage });
   }
 
   // Get ResetPasswordToken
@@ -157,7 +161,7 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `Email sent to ${user.email} successfully.`,
+      message: sentMessage,
     });
   } catch (err) {
     user.resetPasswordToken = undefined;
@@ -256,7 +260,6 @@ exports.updatePassword = catchAsyncError(async (req, res, next) => {
 
   user.password = newPassword;
 
-  user.generateToken();
   await user.save();
 
   res.status(200).json({

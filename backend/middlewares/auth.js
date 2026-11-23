@@ -24,6 +24,14 @@ exports.isAuthenticatedUser = catchAsyncError(async (req, res, next) => {
       return next(new ErrorHandler("Please login to account.", 401));
     }
 
+    const changedAt = req.user.passwordChangedAt?.getTime();
+
+    if (changedAt && userData.iat < Math.floor(changedAt / 1000)) {
+      return next(
+        new ErrorHandler("Password changed, please login again.", 401)
+      );
+    }
+
     next();
   } else {
     return next(new ErrorHandler("Token not found in header.", 400));

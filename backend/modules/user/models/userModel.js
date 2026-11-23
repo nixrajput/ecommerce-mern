@@ -69,6 +69,7 @@ const userSchema = new mongoose.Schema({
   expiresAt: String,
   resetPasswordToken: String,
   resetPasswordExpire: Date,
+  passwordChangedAt: Date,
 });
 
 userSchema.set("toJSON", {
@@ -86,6 +87,13 @@ userSchema.pre("save", async function () {
   }
 
   this.password = await bcrypt.hash(this.password, 12);
+
+  // middlewares/auth.js rejects tokens issued before passwordChangedAt.
+  if (!this.isNew) {
+    this.passwordChangedAt = new Date();
+    this.token = undefined;
+    this.expiresAt = undefined;
+  }
 });
 
 // JWT Token

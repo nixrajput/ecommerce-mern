@@ -1,16 +1,23 @@
 const catchAsyncError = require("../../../middlewares/catchAsyncError");
-const stripe = require("stripe")(
-  "sk_test_51JCiUfSDU2GWp7bizlzSkQUVwQItdQGSBP5zg1kbdnZBB8VS5XDZ5kCVgXcW4lbbWjGvLK99vi3kmjR9AZLC7nBF00YaiymMQH"
-);
+const getStripe = require("../../../utils/stripe");
+const { priceCart } = require("../../order/controllers");
 
 // Process Payment
 exports.createPayment = catchAsyncError(async (req, res, next) => {
-  const myPayment = await stripe.paymentIntents.create({
-    amount: req.body.amount,
+  // The amount comes from database prices, never from the request.
+  const { totals, error } = await priceCart(req.body.orderItems);
+
+  if (error) {
+    return next(error);
+  }
+
+  const myPayment = await getStripe().paymentIntents.create({
+    amount: Math.round(totals.totalPrice * 100),
     currency: "inr",
-    receipt_email: req.body.email,
+    receipt_email: req.user.email,
     metadata: {
       company: "NixLab Shop",
+      user: req.user._id.toString(),
     },
   });
 

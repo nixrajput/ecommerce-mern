@@ -2,7 +2,7 @@ import "../Dashboard.css";
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Button } from "@mui/material";
@@ -100,13 +100,13 @@ function UserList() {
       renderCell: (params) => {
         return (
           <>
-            <Link to={`/admin/users/${params.getValue(params.id, "id")}`}>
+            <Link to={`/admin/users/${params.row.id}`}>
               <EditIcon />
             </Link>
 
             <Button
               onClick={() =>
-                deleteUserHandler(params.getValue(params.id, "id"))
+                deleteUserHandler(params.row.id)
               }
             >
               <DeleteIcon />
@@ -177,7 +177,7 @@ function UserList() {
             columns={columns}
             loading={loading}
             autoHeight
-            disableSelectionOnClick
+            disableRowSelectionOnClick
             className="custom-list-table"
           />
         </div>

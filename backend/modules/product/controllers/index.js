@@ -4,19 +4,52 @@ const catchAsyncError = require("../../../middlewares/catchAsyncError");
 const ApiFeatures = require("../../../utils/apiFeatures");
 const cloudinary = require("cloudinary");
 
+const MAX_IMAGES = 10;
+const PRODUCT_FIELDS = ["name", "description", "price", "category", "stock"];
+
+// Copies only the editable product fields, so a request cannot set ratings, reviews or user.
+const pickProductFields = (body) => {
+  const fields = {};
+
+  for (const key of PRODUCT_FIELDS) {
+    if (body[key] !== undefined) fields[key] = body[key];
+  }
+
+  return fields;
+};
+
+// Returns the uploaded images as an array of strings, undefined when absent, or null when invalid.
+const readImages = (value) => {
+  if (value === undefined) return undefined;
+
+  const images = typeof value === "string" ? [value] : value;
+
+  if (
+    !Array.isArray(images) ||
+    images.length > MAX_IMAGES ||
+    !images.every((image) => typeof image === "string")
+  ) {
+    return null;
+  }
+
+  return images;
+};
+
+exports.readImages = readImages;
+
 // Create Product -- Admin
 exports.createProduct = catchAsyncError(async (req, res, next) => {
-  let images = [];
+  const images = readImages(req.body.images);
 
-  if (typeof req.body.images === "string") {
-    images.push(req.body.images);
-  } else {
-    images = req.body.images;
+  if (images === null) {
+    return next(
+      new ErrorHandler(`Send up to ${MAX_IMAGES} images as strings.`, 400)
+    );
   }
 
   const imagesLink = [];
 
-  for (let i = 0; i < images.length; i++) {
+  for (let i = 0; i < (images?.length ?? 0); i++) {
     const result = await cloudinary.v2.uploader.upload(images[i], {
       folder: "products",
     });
@@ -27,10 +60,11 @@ exports.createProduct = catchAsyncError(async (req, res, next) => {
     });
   }
 
-  req.body.images = imagesLink;
-  req.body.user = req.user.id;
-
-  const product = await Product.create(req.body);
+  const product = await Product.create({
+    ...pickProductFields(req.body),
+    images: imagesLink,
+    user: req.user.id,
+  });
 
   res.status(201).json({
     success: true,
@@ -98,12 +132,13 @@ exports.updateProduct = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Product not found.", 404));
   }
 
-  let images = [];
+  const images = readImages(req.body.images);
+  const update = pickProductFields(req.body);
 
-  if (typeof req.body.images === "string") {
-    images.push(req.body.images);
-  } else {
-    images = req.body.images;
+  if (images === null) {
+    return next(
+      new ErrorHandler(`Send up to ${MAX_IMAGES} images as strings.`, 400)
+    );
   }
 
   if (images !== undefined) {
@@ -124,13 +159,12 @@ exports.updateProduct = catchAsyncError(async (req, res, next) => {
       });
     }
 
-    req.body.images = imagesLink;
+    update.images = imagesLink;
   }
 
-  product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
+  product = await Product.findByIdAndUpdate(req.params.id, update, {
+    returnDocument: "after",
     runValidators: true,
-    useFindAndModify: false,
   });
 
   res.status(200).json({
@@ -151,7 +185,7 @@ exports.deleteProduct = catchAsyncError(async (req, res, next) => {
     await cloudinary.v2.uploader.destroy(product.images[i].public_id);
   }
 
-  await product.remove();
+  await product.deleteOne();
 
   res.status(200).json({
     success: true,
@@ -161,13 +195,22 @@ exports.deleteProduct = catchAsyncError(async (req, res, next) => {
 
 // Create or Update Review
 exports.createProductReview = catchAsyncError(async (req, res, next) => {
-  const { rating, comment, productId } = req.body;
+  const { comment, productId } = req.body;
+  const rating = Number(req.body.rating);
+
+  if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+    return next(new ErrorHandler("Rating must be between 1 and 5.", 400));
+  }
+
+  if (typeof comment !== "string" || !comment.trim()) {
+    return next(new ErrorHandler("Please enter a comment.", 400));
+  }
 
   const review = {
     user: req.user._id,
     name: req.user.name,
-    rating: Number(rating),
-    comment: comment,
+    rating,
+    comment,
   };
 
   const product = await Product.findById(productId);
@@ -229,8 +272,23 @@ exports.deleteReview = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Product not found.", 404));
   }
 
+  const review = product.reviews.find(
+    (doc) => doc._id.toString() === String(req.query.id)
+  );
+
+  if (!review) {
+    return next(new ErrorHandler("Review not found.", 404));
+  }
+
+  if (
+    req.user.role !== "admin" &&
+    review.user.toString() !== req.user._id.toString()
+  ) {
+    return next(new ErrorHandler("You can delete only your own review.", 403));
+  }
+
   const reviews = product.reviews.filter(
-    (doc) => doc._id.toString() !== req.query.id.toString()
+    (doc) => doc._id.toString() !== String(req.query.id)
   );
 
   let total = 0;
@@ -257,9 +315,8 @@ exports.deleteReview = catchAsyncError(async (req, res, next) => {
       numOfReviews,
     },
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
-      useFindAndModify: false,
     }
   );
 

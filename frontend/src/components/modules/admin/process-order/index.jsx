@@ -1,7 +1,7 @@
 import "../Dashboard.css";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import { useSelector, useDispatch } from "react-redux";
 import { FaShippingFast } from "react-icons/fa";
 import { UPDATE_ORDER_RESET } from "../../../../redux/constants/orderConstants";

@@ -1,31 +1,134 @@
+const mongoose = require("mongoose");
 const Order = require("../models/orderModel");
 const Product = require("../../product/models/productModel");
 const ErrorHandler = require("../../../utils/errorHandler");
 const catchAsyncError = require("../../../middlewares/catchAsyncError");
+const getStripe = require("../../../utils/stripe");
+
+const MAX_ORDER_ITEMS = 50;
+
+// Returns the cart items when each has a product id and a positive integer quantity, else null.
+const readCartItems = (items) => {
+  if (!Array.isArray(items) || items.length === 0 || items.length > MAX_ORDER_ITEMS) {
+    return null;
+  }
+
+  const valid = items.every(
+    (item) =>
+      typeof item?.product === "string" &&
+      mongoose.isValidObjectId(item.product) &&
+      Number.isInteger(item.quantity) &&
+      item.quantity > 0
+  );
+
+  return valid ? items : null;
+};
+
+// Prices the order from database prices. Keep in sync with frontend checkout/order-summary.
+const priceOrder = (cartItems, products) => {
+  const productsById = new Map(products.map((doc) => [doc._id.toString(), doc]));
+
+  const orderItems = cartItems.map(({ product, quantity }) => {
+    const doc = productsById.get(product);
+
+    return {
+      product: doc._id,
+      name: doc.name,
+      price: doc.price,
+      image: doc.images[0]?.url,
+      quantity,
+    };
+  });
+
+  const itemsPrice = orderItems.reduce(
+    (acc, item) => acc + item.quantity * item.price,
+    0
+  );
+  const shippingPrice = itemsPrice > 1000 ? 0 : 50;
+  const taxPrice = itemsPrice * 0.18;
+  const totalPrice = itemsPrice + taxPrice;
+
+  return { orderItems, itemsPrice, taxPrice, shippingPrice, totalPrice };
+};
+
+// Returns { totals } priced from the database, or { error } when the cart is invalid.
+const priceCart = async (items) => {
+  const cartItems = readCartItems(items);
+
+  if (!cartItems) {
+    return {
+      error: new ErrorHandler(
+        `Send 1 to ${MAX_ORDER_ITEMS} order items, each with a product and a quantity.`,
+        400
+      ),
+    };
+  }
+
+  const productIds = [...new Set(cartItems.map((item) => item.product))];
+  const products = await Product.find({
+    _id: mongoose.trusted({ $in: productIds }),
+  });
+
+  if (products.length !== productIds.length) {
+    return { error: new ErrorHandler("Product not found.", 404) };
+  }
+
+  return { totals: priceOrder(cartItems, products) };
+};
+
+exports.readCartItems = readCartItems;
+exports.priceOrder = priceOrder;
+exports.priceCart = priceCart;
 
 // Create New Order
 exports.createNewOrder = catchAsyncError(async (req, res, next) => {
-  const {
-    shippingInfo,
-    orderItems,
-    paymentInfo,
-    itemsPrice,
-    taxPrice,
-    shippingPrice,
-    totalPrice,
-  } = req.body;
+  const { shippingInfo, paymentInfo } = req.body;
 
-  const order = await Order.create({
-    shippingInfo,
-    orderItems,
-    paymentInfo,
-    itemsPrice,
-    taxPrice,
-    shippingPrice,
-    totalPrice,
-    paidAt: Date.now(),
-    user: req.user._id,
-  });
+  if (typeof paymentInfo?.id !== "string" || !paymentInfo.id) {
+    return next(new ErrorHandler("Payment information is missing.", 400));
+  }
+
+  const { totals, error } = await priceCart(req.body.orderItems);
+
+  if (error) {
+    return next(error);
+  }
+
+  if (await Order.exists({ "paymentInfo.id": paymentInfo.id })) {
+    return next(new ErrorHandler("This payment is already used.", 400));
+  }
+
+  // The client only reports the payment. Stripe confirms it was paid, in full, for this total.
+  const paymentIntent = await getStripe().paymentIntents.retrieve(paymentInfo.id);
+
+  if (
+    paymentIntent.status !== "succeeded" ||
+    paymentIntent.metadata?.user !== req.user._id.toString() ||
+    paymentIntent.currency !== "inr" ||
+    paymentIntent.amount !== Math.round(totals.totalPrice * 100)
+  ) {
+    return next(
+      new ErrorHandler("Payment does not match the order total.", 400)
+    );
+  }
+
+  let order;
+
+  try {
+    order = await Order.create({
+      shippingInfo,
+      ...totals,
+      paymentInfo: { id: paymentIntent.id, status: paymentIntent.status },
+      paidAt: Date.now(),
+      user: req.user._id,
+    });
+  } catch (err) {
+    // The unique index on paymentInfo.id catches two requests that both passed the exists() check.
+    if (err.code === 11000) {
+      return next(new ErrorHandler("This payment is already used.", 400));
+    }
+    throw err;
+  }
 
   res.status(200).json({
     success: true,
@@ -41,7 +144,12 @@ exports.getCustomOrder = catchAsyncError(async (req, res, next) => {
     "name email"
   );
 
-  if (!order) {
+  // Owners and admins only. Others get 404, so order ids cannot be probed.
+  if (
+    !order ||
+    (req.user.role !== "admin" &&
+      order.user?._id.toString() !== req.user._id.toString())
+  ) {
     return next(new ErrorHandler("Order not found.", 404));
   }
 
@@ -93,9 +201,9 @@ exports.updateOrder = catchAsyncError(async (req, res, next) => {
   }
 
   if (req.body.status === "Shipped") {
-    order.orderItems.forEach(async (doc) => {
+    for (const doc of order.orderItems) {
       await updateStock(doc.product, doc.quantity);
-    });
+    }
   }
 
   order.orderStatus = req.body.status;
@@ -115,6 +223,8 @@ exports.updateOrder = catchAsyncError(async (req, res, next) => {
 async function updateStock(id, qty) {
   const product = await Product.findById(id);
 
+  if (!product) return;
+
   product.stock -= qty;
 
   await product.save();
@@ -128,7 +238,7 @@ exports.deleteOrder = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Order not found.", 404));
   }
 
-  await order.remove();
+  await order.deleteOne();
 
   res.status(200).json({
     success: true,

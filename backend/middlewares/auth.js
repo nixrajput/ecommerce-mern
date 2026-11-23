@@ -8,17 +8,34 @@ exports.isAuthenticatedUser = catchAsyncError(async (req, res, next) => {
 
   if (typeof bearerHeader !== "undefined") {
     const bearer = bearerHeader.split(" ");
-    const bearerToken = bearer[1];
-
-    token = bearerToken;
+    const token = bearer[1];
 
     if (!token) {
       return next(new ErrorHandler("Please login to account.", 400));
     }
 
-    const userData = jwt.verify(token, process.env.JWT_SECRET);
+    const userData = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+
+    // Earlier versions could issue tokens without an expiry. Those stay rejected.
+    if (typeof userData.exp !== "number") {
+      return next(new ErrorHandler("Token is expired, please login again.", 401));
+    }
 
     req.user = await User.findById(userData.id);
+
+    if (!req.user) {
+      return next(new ErrorHandler("Please login to account.", 401));
+    }
+
+    const changedAt = req.user.passwordChangedAt?.getTime();
+
+    if (changedAt && userData.iat < Math.floor(changedAt / 1000)) {
+      return next(
+        new ErrorHandler("Password changed, please login again.", 401)
+      );
+    }
 
     next();
   } else {

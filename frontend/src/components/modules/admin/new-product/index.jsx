@@ -2,7 +2,7 @@ import "../Dashboard.css";
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import {
   MdAttachMoney,
   MdCategory,

@@ -56,6 +56,7 @@ const userSchema = new mongoose.Schema({
 
   role: {
     type: String,
+    enum: ["user", "admin"],
     default: "user",
   },
 
@@ -64,31 +65,41 @@ const userSchema = new mongoose.Schema({
     default: Date.now,
   },
 
-  token: String,
-  expiresAt: String,
   resetPasswordToken: String,
   resetPasswordExpire: Date,
+  passwordChangedAt: Date,
 });
 
-userSchema.pre("save", async function (next) {
+userSchema.set("toJSON", {
+  transform: (doc, ret) => {
+    delete ret.password;
+    // Older documents still hold the session token that earlier versions stored.
+    delete ret.token;
+    delete ret.expiresAt;
+    delete ret.resetPasswordToken;
+    delete ret.resetPasswordExpire;
+    return ret;
+  },
+});
+
+userSchema.pre("save", async function () {
   if (!this.isModified("password")) {
-    next();
+    return;
   }
 
-  this.password = await bcrypt.hash(this.password, 16);
+  this.password = await bcrypt.hash(this.password, 12);
+
+  // middlewares/auth.js rejects tokens issued before passwordChangedAt.
+  if (!this.isNew) {
+    this.passwordChangedAt = new Date();
+  }
 });
 
 // JWT Token
 userSchema.methods.generateToken = function () {
-  const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "1d",
   });
-
-  const decodedData = jwt.decode(token);
-  this.token = token;
-  this.expiresAt = decodedData.exp;
-
-  return token;
 };
 
 // Compare Password

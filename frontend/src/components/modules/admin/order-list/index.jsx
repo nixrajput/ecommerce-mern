@@ -2,7 +2,7 @@ import "../Dashboard.css";
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import { Button } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import EditIcon from "@mui/icons-material/Edit";
@@ -97,13 +97,13 @@ function OrderList() {
       renderCell: (params) => {
         return (
           <>
-            <Link to={`/admin/orders/${params.getValue(params.id, "id")}`}>
+            <Link to={`/admin/orders/${params.row.id}`}>
               <EditIcon />
             </Link>
 
             <Button
               onClick={() =>
-                deleteOrderHandler(params.getValue(params.id, "id"))
+                deleteOrderHandler(params.row.id)
               }
             >
               <DeleteIcon />
@@ -162,7 +162,7 @@ function OrderList() {
           <DataGrid
             rows={rows}
             columns={columns}
-            disableSelectionOnClick
+            disableRowSelectionOnClick
             loading={loading}
             autoHeight
             className="custom-list-table"

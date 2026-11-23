@@ -23,6 +23,7 @@ An E-commerce Website developed using MERN stack where user can buy and checkout
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
   - [Usage](#usage)
+  - [Environment variables](#environment-variables)
   - [Customization](#customization)
   - [Deployment](#deployment)
   - [Contributing](#contributing)
@@ -59,7 +60,7 @@ Follow these instructions to get the project up and running on your local machin
 
 You need to have the following software installed on your computer:
 
-- [Node.js](https://nodejs.org/) (LTS version recommended)
+- [Node.js](https://nodejs.org/) 20.19 or newer (22.12 or newer on the 22 line). The backend uses Mongoose 9 and the frontend builds with Vite 8.
 - [Bun](https://bun.sh), [npm](https://www.npmjs.com/), [pnpm](https://pnpm.io/) or [Yarn](https://yarnpkg.com/) package manager
 
 ### Installation
@@ -118,7 +119,27 @@ pnpm run dev
 yarn dev
 ```
 
-This will start the development server, and you can access the website in your web browser at `http://localhost:3000`.
+This starts the API server on `http://localhost:4000`. To work on the frontend, run `pnpm start` in the `frontend` folder. The Vite dev server opens the website at `http://localhost:3000` and forwards `/api` requests to the API server. `pnpm run build` in the root folder builds the frontend into `frontend/build`, which the API server serves.
+
+Run the backend tests with `pnpm test`. The first run downloads a MongoDB server binary into `node_modules/.cache` for the database tests.
+
+## Environment variables
+
+In development, the backend reads these from `backend/config/config.env`. In production, set them in the host's environment.
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DB_URI`, `DB_NAME` | Yes | MongoDB connection string and database name. |
+| `JWT_SECRET` | Yes | Secret that signs login tokens. Use a long random value. |
+| `JWT_EXPIRES_IN` | No | Token lifetime, for example `1d` (the default) or `7d`. |
+| `STRIPE_SECRET_KEY` | Yes | Stripe secret key. The backend creates and verifies payments with it. |
+| `STRIPE_API_KEY` | No | Stripe publishable key that `GET /api/v1/stripe/key` returns. |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Yes | Image uploads for products and avatars. |
+| `SENDGRID_API_KEY`, `SMTP_FROM` | Yes | Welcome and password reset emails. |
+| `FRONTEND_URL` | Yes in production | Base URL for password reset links, for example `https://shop.example.com`. Defaults to `http://localhost:3000`. |
+| `CORS_ORIGIN` | No | Comma-separated list of other origins that may call the API. Unset means same-origin only. |
+| `TRUST_PROXY` | No | Number of proxies in front of the server (default `1`), so rate limits see the client IP. Set `0` when no proxy is in front. |
+| `PORT` | No | API port. Defaults to `4000`. |
 
 ## Customization
 

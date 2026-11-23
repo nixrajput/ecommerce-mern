@@ -2,7 +2,7 @@ import "../Dashboard.css";
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { MdPostAdd } from "react-icons/md";
@@ -106,13 +106,13 @@ function ProductList() {
       renderCell: (params) => {
         return (
           <>
-            <Link to={`/admin/products/${params.getValue(params.id, "id")}`}>
+            <Link to={`/admin/products/${params.row.id}`}>
               <EditIcon />
             </Link>
 
             <Button
               onClick={() =>
-                deleteProductHandler(params.getValue(params.id, "id"))
+                deleteProductHandler(params.row.id)
               }
             >
               <DeleteIcon />
@@ -156,7 +156,7 @@ function ProductList() {
             columns={columns}
             loading={loading}
             autoHeight
-            disableSelectionOnClick
+            disableRowSelectionOnClick
             className="custom-list-table"
           />
         </div>

@@ -1,3 +1,20 @@
+const { trusted } = require("mongoose");
+
+// Query values arrive as strings. Arrays and objects are ignored.
+const toString = (value) => (typeof value === "string" ? value : undefined);
+
+const toNumber = (value) => {
+  const str = toString(value);
+  if (str === undefined || str.trim() === "") return undefined;
+  const num = Number(str);
+  return Number.isFinite(num) ? num : undefined;
+};
+
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const RANGE_FIELDS = ["price", "ratings"];
+const RANGE_OPERATORS = ["gt", "gte", "lt", "lte"];
+
 class ApiFeatures {
   constructor(query, queryStr) {
     this.query = query;
@@ -5,37 +22,41 @@ class ApiFeatures {
   }
 
   search() {
-    const keyword = this.queryStr.keyword
-      ? {
-          name: {
-            $regex: this.queryStr.keyword,
-            $options: "i",
-          },
-        }
-      : {};
+    const keyword = toString(this.queryStr.keyword);
 
-    this.query = this.query.find({ ...keyword });
+    if (keyword) {
+      this.query = this.query.find({
+        name: trusted({ $regex: escapeRegex(keyword), $options: "i" }),
+      });
+    }
+
     return this;
   }
 
+  // Accepts only category and price/ratings ranges, e.g. ?price[gte]=10&category=Laptop
   filter() {
-    const tempQuery = { ...this.queryStr };
+    const filter = {};
 
-    // Remove fields for Category
-    const removedFields = ["keyword", "page", "limit"];
+    const category = toString(this.queryStr.category);
+    if (category) filter.category = category;
 
-    removedFields.forEach((key) => delete tempQuery[key]);
+    for (const field of RANGE_FIELDS) {
+      const range = {};
 
-    // Filter for Price and Rating
-    let queryStr = JSON.stringify(tempQuery);
-    queryStr = queryStr.replace(/\b(gt|gte|lt|lte)\b/g, (key) => `$${key}`);
+      for (const op of RANGE_OPERATORS) {
+        const value = toNumber(this.queryStr[`${field}[${op}]`]);
+        if (value !== undefined) range[`$${op}`] = value;
+      }
 
-    this.query = this.query.find(JSON.parse(queryStr));
+      if (Object.keys(range).length > 0) filter[field] = trusted(range);
+    }
+
+    this.query = this.query.find(filter);
     return this;
   }
 
   pagination(resultPerPage) {
-    const currentPage = Number(this.queryStr.page) || 1;
+    const currentPage = Math.max(1, Math.floor(toNumber(this.queryStr.page) || 1));
 
     const skip = resultPerPage * (currentPage - 1);
 

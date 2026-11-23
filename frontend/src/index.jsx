@@ -1,22 +1,15 @@
 import { StrictMode } from "react";
-import ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
 import { Provider } from "react-redux";
 import store from "./redux/store";
-import { positions, transitions, Provider as AlertProvider } from "react-alert";
+import { AlertProvider } from "./components/helpers/alert";
 import {
   BsPatchCheck,
   BsPatchExclamation,
   BsXCircleFill,
 } from "react-icons/bs";
-
-const options = {
-  timeout: 5000,
-  position: positions.BOTTOM_CENTER,
-  transition: transitions.SCALE,
-  offset: "10px",
-};
 
 const AlertTemplate = ({ style, options, message, close }) => (
   <div
@@ -66,13 +59,12 @@ const AlertTemplate = ({ style, options, message, close }) => (
   </div>
 );
 
-ReactDOM.render(
+createRoot(document.getElementById("root")).render(
   <StrictMode>
     <Provider store={store}>
-      <AlertProvider template={AlertTemplate} {...options}>
+      <AlertProvider template={AlertTemplate} timeout={5000} offset="10px">
         <App />
       </AlertProvider>
     </Provider>
-  </StrictMode>,
-  document.getElementById("root")
+  </StrictMode>
 );

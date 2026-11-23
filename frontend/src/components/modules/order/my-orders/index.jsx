@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import LaunchIcon from "@mui/icons-material/Launch";
 import { DataGrid } from "@mui/x-data-grid";
 import { clearErrors, myOrders } from "../../../../redux/actions/orderAction";
@@ -38,7 +38,7 @@ function MyOrders() {
       minWidth: 100,
       flex: 0.5,
       cellClassName: (params) => {
-        return params.getValue(params.id, "status") === "Delivered"
+        return params.row.status === "Delivered"
           ? "greenColor"
           : "redColor";
       },
@@ -72,7 +72,7 @@ function MyOrders() {
       sortable: false,
       renderCell: (params) => {
         return (
-          <Link to={`/orders/${params.getValue(params.id, "id")}`}>
+          <Link to={`/orders/${params.row.id}`}>
             <LaunchIcon />
           </Link>
         );
@@ -122,7 +122,7 @@ function MyOrders() {
             <DataGrid
               rows={rows}
               columns={columns}
-              disableSelectionOnClick
+              disableRowSelectionOnClick
               loading={loading}
               autoHeight
               className="custom-list-table"

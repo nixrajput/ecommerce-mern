@@ -1,7 +1,7 @@
 import "../Dashboard.css";
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import { useNavigate, useParams } from "react-router-dom";
 import { HiMail } from "react-icons/hi";
 import {

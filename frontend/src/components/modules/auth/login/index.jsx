@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import { HiMail, HiLockClosed } from "react-icons/hi";
 import Logo from "../../../../assets/images/logo.png";
 import { clearErrors, login } from "../../../../redux/actions/userAction";

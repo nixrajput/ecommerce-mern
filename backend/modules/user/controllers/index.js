@@ -5,6 +5,7 @@ const sendEmail = require("../../../utils/sendEmail");
 const crypto = require("crypto");
 const cloudinary = require("cloudinary");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 
 // Register a User
 exports.registerUser = catchAsyncError(async (req, res, next) => {
@@ -29,7 +30,6 @@ exports.registerUser = catchAsyncError(async (req, res, next) => {
   });
 
   const token = user.generateToken();
-  await user.save();
   const decodedData = jwt.decode(token);
   const expiresAt = decodedData.exp;
 
@@ -62,7 +62,7 @@ exports.loginUser = catchAsyncError(async (req, res, next) => {
   const { email, password } = req.body;
 
   // Email and Password validation
-  if (!email || !password) {
+  if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
     return next(
       new ErrorHandler("Please enter email and password to login.", 401)
     );
@@ -80,22 +80,8 @@ exports.loginUser = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Invalid email or password.", 401));
   }
 
-  let token = user.token;
-  let expiresAt = user.expiresAt;
-
-  if (token) {
-    if (expiresAt < new Date().getTime() / 1000) {
-      token = user.generateToken();
-      await user.save();
-      const decodedData = jwt.verify(token, process.env.JWT_SECRET);
-      expiresAt = decodedData.exp;
-    }
-  } else {
-    token = user.generateToken();
-    await user.save();
-    const decodedData = jwt.verify(token, process.env.JWT_SECRET);
-    expiresAt = decodedData.exp;
-  }
+  const token = user.generateToken();
+  const expiresAt = jwt.decode(token).exp;
 
   res.status(200).json({
     success: true,
@@ -118,7 +104,7 @@ exports.logoutUser = catchAsyncError(async (req, res, next) => {
 exports.forgotPassword = catchAsyncError(async (req, res, next) => {
   const { email } = req.body;
 
-  if (!email) {
+  if (typeof email !== "string" || !email) {
     return next(
       new ErrorHandler(
         "Please enter your email associated with the account.",
@@ -129,8 +115,12 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
 
   const user = await User.findOne({ email: email });
 
+  // Same answer for known and unknown emails, so the form cannot list accounts.
+  const sentMessage =
+    "If an account exists for this email, we sent a password reset link.";
+
   if (!user) {
-    return next(new ErrorHandler("User not found.", 404));
+    return res.status(200).json({ success: true, message: sentMessage });
   }
 
   // Get ResetPasswordToken
@@ -138,13 +128,9 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
 
   await user.save();
 
-  let resetPasswordUrl = `${req.protocol}://${req.get(
-    "host"
-  )}/auth/password/reset/${resetToken}`;
-
-  if (process.env.NODE_ENV !== "PRODUCTION") {
-    resetPasswordUrl = `http://localhost:3000/auth/password/reset/${resetToken}`;
-  }
+  // Built from config, never from the request Host header, so the link cannot point to another site.
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const resetPasswordUrl = `${frontendUrl}/auth/password/reset/${resetToken}`;
 
   const message = `Hello ${user.name},
     \nYour password reset link is :- \n\n ${resetPasswordUrl}.
@@ -160,7 +146,7 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `Email sent to ${user.email} successfully.`,
+      message: sentMessage,
     });
   } catch (err) {
     user.resetPasswordToken = undefined;
@@ -192,14 +178,14 @@ exports.resetPassword = catchAsyncError(async (req, res, next) => {
 
   const user = await User.findOne({
     resetPasswordToken,
-    resetPasswordExpire: { $gt: Date.now() },
+    resetPasswordExpire: mongoose.trusted({ $gt: Date.now() }),
   });
 
   if (!user) {
     return next(new ErrorHandler("Token is invalid or expired.", 400));
   }
 
-  if (newP4 !== confirmPassword) {
+  if (newPassword !== confirmPassword) {
     return next(new ErrorHandler("Passwords do not matched.", 400));
   }
 
@@ -259,7 +245,6 @@ exports.updatePassword = catchAsyncError(async (req, res, next) => {
 
   user.password = newPassword;
 
-  user.generateToken();
   await user.save();
 
   res.status(200).json({
@@ -389,7 +374,7 @@ exports.deleteUser = catchAsyncError(async (req, res, next) => {
     await cloudinary.v2.uploader.destroy(imageId);
   }
 
-  await user.remove();
+  await user.deleteOne();
 
   res.status(200).json({
     success: true,

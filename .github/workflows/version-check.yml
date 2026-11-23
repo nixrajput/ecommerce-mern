@@ -15,16 +15,18 @@ jobs:
     name: version bumped
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # need the base branch to diff the version
           persist-credentials: false
       - name: Read versions
         id: v
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
           pr=$(jq -r .version package.json)
-          base=$(git show "origin/${{ github.base_ref }}:package.json" | jq -r .version)
+          base=$(git show "origin/$BASE_REF:package.json" | jq -r .version)
           echo "pr=$pr" >> "$GITHUB_OUTPUT"
           echo "base=$base" >> "$GITHUB_OUTPUT"
       - name: Compare

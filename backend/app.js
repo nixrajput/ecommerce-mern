@@ -40,12 +40,18 @@ exports.runApp = () => {
       exposedHeaders: ["x-auth-token"],
     })
   );
-  app.use(express.json({ limit: "100mb" }));
+  // Only these routes take base64 images. Up to 10 images of 1 MiB (busboy's default field size, about
+  // 750 KB raw) plus text fields fit in 11 MiB. Every other route keeps the 100 KB default.
+  app.use(
+    ["/api/v1/admin/product", "/api/v1/user/me/update"],
+    express.json({ limit: "11mb" }),
+    fileUpload({ limits: { fieldSize: 1024 * 1024, fields: 20, files: 0 } })
+  );
+  app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(bodyParser.json());
   app.use(cookieParser());
-  app.use(fileUpload());
 
   // Express 5 leaves req.body undefined when no parser ran. The controllers destructure it.
   app.use((req, res, next) => {

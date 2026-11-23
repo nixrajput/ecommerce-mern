@@ -122,30 +122,13 @@ export const loadUser = (token) => async (dispatch) => {
       },
     };
 
+    // The API verifies the token and its expiry. A failed call logs the user out below.
     const { data } = await axios.get(`/api/v1/user/me`, config);
 
-    if (
-      data.result.token &&
-      data.result.token === token &&
-      data.result.expiresAt > new Date().getTime() / 1000
-    ) {
-      const userData = {
-        user: data.result,
-        token: data.result.token,
-        expiresAt: data.result.expiresAt,
-      };
-
-      dispatch({
-        type: LOAD_USER_SUCCESS,
-        payload: userData,
-      });
-    } else {
-      dispatch(logout());
-      dispatch({
-        type: LOAD_USER_FAIL,
-        payload: "Token is invalid or expired.",
-      });
-    }
+    dispatch({
+      type: LOAD_USER_SUCCESS,
+      payload: { user: data.result, token },
+    });
   } catch (error) {
     dispatch(logout());
     dispatch({

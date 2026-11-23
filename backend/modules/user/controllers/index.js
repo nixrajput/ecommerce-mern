@@ -30,7 +30,6 @@ exports.registerUser = catchAsyncError(async (req, res, next) => {
   });
 
   const token = user.generateToken();
-  await user.save();
   const decodedData = jwt.decode(token);
   const expiresAt = decodedData.exp;
 
@@ -81,22 +80,8 @@ exports.loginUser = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Invalid email or password.", 401));
   }
 
-  let token = user.token;
-  let expiresAt = user.expiresAt;
-
-  if (token) {
-    if (expiresAt < new Date().getTime() / 1000) {
-      token = user.generateToken();
-      await user.save();
-      const decodedData = jwt.verify(token, process.env.JWT_SECRET);
-      expiresAt = decodedData.exp;
-    }
-  } else {
-    token = user.generateToken();
-    await user.save();
-    const decodedData = jwt.verify(token, process.env.JWT_SECRET);
-    expiresAt = decodedData.exp;
-  }
+  const token = user.generateToken();
+  const expiresAt = jwt.decode(token).exp;
 
   res.status(200).json({
     success: true,
@@ -313,7 +298,7 @@ exports.updateUserProfile = catchAsyncError(async (req, res, next) => {
 
 // Get All Users -- Admin
 exports.getAllUsers = catchAsyncError(async (req, res, next) => {
-  const users = await User.find().select("-token");
+  const users = await User.find();
   const usersCount = await User.countDocuments();
 
   res.status(200).json({
@@ -325,7 +310,7 @@ exports.getAllUsers = catchAsyncError(async (req, res, next) => {
 
 // Get Custom User Details -- Admin
 exports.getCustomUserDetails = catchAsyncError(async (req, res, next) => {
-  const user = await User.findById(req.params.id).select("-token");
+  const user = await User.findById(req.params.id);
 
   if (!user) {
     return next(new ErrorHandler("User not found.", 404));

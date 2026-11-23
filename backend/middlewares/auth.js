@@ -18,6 +18,11 @@ exports.isAuthenticatedUser = catchAsyncError(async (req, res, next) => {
       algorithms: ["HS256"],
     });
 
+    // Earlier versions could issue tokens without an expiry. Those stay rejected.
+    if (typeof userData.exp !== "number") {
+      return next(new ErrorHandler("Token is expired, please login again.", 401));
+    }
+
     req.user = await User.findById(userData.id);
 
     if (!req.user) {

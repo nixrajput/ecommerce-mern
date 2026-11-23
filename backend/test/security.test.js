@@ -151,19 +151,75 @@ test("order totals come from database prices, not the request", () => {
 test("tokens issued before a password change are rejected", async () => {
   process.env.JWT_SECRET = "zz-dummy-test-secret";
   const findById = User.findById;
-  User.findById = async () => ({ role: "user", passwordChangedAt: new Date(2_000_000_000) });
+  const changedAt = Math.floor(Date.now() / 1000);
+  User.findById = async () => ({ role: "user", passwordChangedAt: new Date(changedAt * 1000) });
 
   const authenticate = (iat) =>
     new Promise((resolve) => {
-      const token = jwt.sign({ id: "x", iat }, process.env.JWT_SECRET);
+      const token = jwt.sign({ id: "x", iat, exp: changedAt + 3600 }, process.env.JWT_SECRET);
       const req = { headers: { authorization: `Bearer ${token}` } };
       isAuthenticatedUser(req, {}, (err) => resolve(err));
     });
 
   try {
-    assert.equal((await authenticate(1_999_999)).statusCode, 401);
-    assert.equal(await authenticate(2_000_001), undefined);
+    assert.equal((await authenticate(changedAt - 60)).statusCode, 401);
+    assert.equal(await authenticate(changedAt + 1), undefined);
   } finally {
     User.findById = findById;
   }
+});
+
+test("tokens without an expiry are rejected", async () => {
+  process.env.JWT_SECRET = "zz-dummy-test-secret";
+  const findById = User.findById;
+  User.findById = async () => ({ role: "user" });
+
+  try {
+    const token = jwt.sign({ id: "x" }, process.env.JWT_SECRET);
+    const err = await new Promise((resolve) =>
+      isAuthenticatedUser({ headers: { authorization: `Bearer ${token}` } }, {}, resolve)
+    );
+    assert.equal(err.statusCode, 401);
+  } finally {
+    User.findById = findById;
+  }
+});
+
+test("generateToken returns an expiring token and stores nothing", () => {
+  process.env.JWT_SECRET = "zz-dummy-test-secret";
+  const user = new User({ name: "zz-dummy", email: "zz-dummy@example.test", password: "x" });
+  const token = user.generateToken();
+
+  assert.equal(typeof jwt.decode(token).exp, "number");
+  assert.equal(user.get("token"), undefined);
+  assert.equal(user.isModified(), true);
+  assert.deepEqual(user.modifiedPaths().filter((p) => /token|expiresAt/.test(p)), []);
+});
+
+test("bodies over 100 KB get 413 outside the image routes", async () => {
+  const big = JSON.stringify({ comment: "x".repeat(200 * 1024) });
+  const res = await fetch(`${baseUrl}/api/v1/review`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: big,
+  });
+
+  assert.equal(res.status, 413);
+});
+
+test("image routes accept bodies up to 11 MB", async () => {
+  const body = JSON.stringify({ images: ["x".repeat(1024 * 1024)] });
+  const res = await fetch(`${baseUrl}/api/v1/admin/product/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+  });
+
+  assert.equal(res.status, 400, "reaches the auth check instead of failing on size");
+  const tooBig = await fetch(`${baseUrl}/api/v1/admin/product/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ images: ["x".repeat(12 * 1024 * 1024)] }),
+  });
+  assert.equal(tooBig.status, 413);
 });

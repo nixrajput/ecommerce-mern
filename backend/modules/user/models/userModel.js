@@ -65,8 +65,6 @@ const userSchema = new mongoose.Schema({
     default: Date.now,
   },
 
-  token: String,
-  expiresAt: String,
   resetPasswordToken: String,
   resetPasswordExpire: Date,
   passwordChangedAt: Date,
@@ -75,6 +73,9 @@ const userSchema = new mongoose.Schema({
 userSchema.set("toJSON", {
   transform: (doc, ret) => {
     delete ret.password;
+    // Older documents still hold the session token that earlier versions stored.
+    delete ret.token;
+    delete ret.expiresAt;
     delete ret.resetPasswordToken;
     delete ret.resetPasswordExpire;
     return ret;
@@ -91,22 +92,14 @@ userSchema.pre("save", async function () {
   // middlewares/auth.js rejects tokens issued before passwordChangedAt.
   if (!this.isNew) {
     this.passwordChangedAt = new Date();
-    this.token = undefined;
-    this.expiresAt = undefined;
   }
 });
 
 // JWT Token
 userSchema.methods.generateToken = function () {
-  const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || "1d",
   });
-
-  const decodedData = jwt.decode(token);
-  this.token = token;
-  this.expiresAt = decodedData.exp;
-
-  return token;
 };
 
 // Compare Password

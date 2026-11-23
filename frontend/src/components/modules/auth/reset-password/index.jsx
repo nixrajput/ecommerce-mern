@@ -1,39 +1,41 @@
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
-import { useAlert } from "react-alert";
-import { HiKey, HiLockClosed, HiLockOpen } from "react-icons/hi";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAlert } from "../../../helpers/alert";
+import { HiLockClosed, HiLockOpen } from "react-icons/hi";
 import { BiArrowBack } from "react-icons/bi";
 import {
   clearErrors,
-  updatePassword,
+  resetPassword,
 } from "../../../../redux/actions/userAction";
-import { UPDATE_PASSWORD_RESET } from "../../../../redux/constants/userConstants";
 import Loader from "../../../layout/loader/Loader";
 import MetaData from "../../../layout/MetaData";
-import AppWrap from "../../../hoc/AppWrap";
+import Logo from "../../../../assets/images/logo.png";
+import { RESET_PASSWORD_RESET } from "../../../../redux/constants/userConstants";
 
-function UpdatePassword() {
+function ResetPassword() {
   const dispatch = useDispatch();
   const alert = useAlert();
   const navigate = useNavigate();
 
-  const { error, loading, isUpdated } = useSelector((state) => state.profile);
+  const { token } = useParams();
 
-  const [oldPassword, setOldPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
+  const { error, success, loading } = useSelector(
+    (state) => state.forgotPassword
+  );
+
+  const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const updatePasswordSubmit = (e) => {
+  const resetPasswordSubmit = (e) => {
     e.preventDefault();
 
     const myForm = new FormData();
 
-    myForm.set("oldPassword", oldPassword);
-    myForm.set("newPassword", newPassword);
+    myForm.set("newPassword", password);
     myForm.set("confirmPassword", confirmPassword);
 
-    dispatch(updatePassword(myForm));
+    dispatch(resetPassword(token, myForm));
   };
 
   useEffect(() => {
@@ -42,38 +44,45 @@ function UpdatePassword() {
       dispatch(clearErrors());
     }
 
-    if (isUpdated) {
-      alert.success("Password Changed Successfully");
+    if (success) {
+      alert.success("Password Updated Successfully");
 
-      navigate("/user/profile");
+      navigate("/auth/login");
 
-      dispatch({ type: UPDATE_PASSWORD_RESET });
+      dispatch({
+        type: RESET_PASSWORD_RESET,
+      });
     }
 
     return () => {};
-  }, [dispatch, error, alert, navigate, isUpdated]);
+  }, [dispatch, error, alert, navigate, success]);
 
   return (
-    <div className="app__top-margin">
+    <>
       <div className="app__flex-container">
-        <MetaData title="Change Password - NixLab Shop" />
-
-        <form className="app__flex-card" onSubmit={updatePasswordSubmit}>
+        <MetaData title="Reset Password - NixLab Shop" />
+        <form className="app__flex" onSubmit={resetPasswordSubmit}>
           {loading && <Loader />}
 
-          <p className="title">Change Password</p>
-
-          <div className="form-control">
-            <HiKey />
-            <input
-              type="password"
-              placeholder="Old Password"
-              required
-              disabled={loading}
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
+          <div
+            className="logo"
+            onClick={() => {
+              navigate("/");
+            }}
+          >
+            <img
+              className="logo-img"
+              width="100%"
+              height="100%"
+              src={Logo}
+              alt="logo-img"
+              loading="lazy"
             />
           </div>
+
+          <p className="title">Reset Password</p>
+
+          <p className="subtitle">Create your new password</p>
 
           <div className="form-control">
             <HiLockClosed />
@@ -82,8 +91,8 @@ function UpdatePassword() {
               placeholder="New Password"
               required
               disabled={loading}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
           <div className="form-control">
@@ -97,9 +106,10 @@ function UpdatePassword() {
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
           </div>
+
           <input
             type="submit"
-            value="Change Password"
+            value="Reset Password"
             disabled={loading}
             className="rounded-filled-btn"
             style={{
@@ -114,14 +124,14 @@ function UpdatePassword() {
               marginTop: 20,
             }}
           >
-            <Link to="/user/profile">
-              <BiArrowBack /> Back to Profile
+            <Link to="/auth/login">
+              <BiArrowBack /> Back to Login
             </Link>
           </div>
         </form>
       </div>
-    </div>
+    </>
   );
 }
 
-export default AppWrap(UpdatePassword);
+export default ResetPassword;

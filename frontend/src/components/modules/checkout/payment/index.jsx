@@ -1,6 +1,6 @@
 import "../Checkout.css";
 import { useEffect, useRef, useState } from "react";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import { useSelector, useDispatch } from "react-redux";
 import { FaCalendarAlt, FaCreditCard, FaKey } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
@@ -38,8 +38,7 @@ function Payment() {
   const orderInfo = JSON.parse(sessionStorage.getItem("orderInfo"));
 
   const paymentData = {
-    amount: Math.round(orderInfo.totalPrice * 100),
-    email: user.email,
+    orderItems: cartItems,
   };
 
   const order = {

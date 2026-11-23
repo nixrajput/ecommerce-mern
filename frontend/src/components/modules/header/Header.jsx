@@ -200,8 +200,8 @@ function Header() {
               anchorEl={anchorEl}
               open={openMenu}
               onClose={handleCloseMenu}
-              MenuListProps={{
-                "aria-labelledby": "user-button",
+              slotProps={{
+                list: { "aria-labelledby": "user-button" },
               }}
             >
               {UserOptions.map((option, i) => (

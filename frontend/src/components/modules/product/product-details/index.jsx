@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import Carousel from "react-material-ui-carousel";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import Rating from "@mui/material/Rating";
 import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 import { FaStar, FaCartPlus } from "react-icons/fa";

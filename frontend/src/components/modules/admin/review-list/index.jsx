@@ -1,7 +1,7 @@
 import "../Dashboard.css";
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import { useNavigate } from "react-router-dom";
 import { DataGrid } from "@mui/x-data-grid";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -70,7 +70,7 @@ function ProductReviewList() {
       minWidth: 80,
       flex: 0.4,
       cellClassName: (params) => {
-        return params.getValue(params.id, "rating") >= 3
+        return params.row.rating >= 3
           ? "greenColor"
           : "redColor";
       },
@@ -88,7 +88,7 @@ function ProductReviewList() {
           <>
             <button
               onClick={() =>
-                deleteReviewHandler(params.getValue(params.id, "id"))
+                deleteReviewHandler(params.row.id)
               }
             >
               <DeleteIcon />
@@ -189,7 +189,7 @@ function ProductReviewList() {
               columns={columns}
               loading={loading}
               autoHeight
-              disableSelectionOnClick
+              disableRowSelectionOnClick
               className="custom-list-table"
             />
           ) : (

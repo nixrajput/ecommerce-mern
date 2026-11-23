@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useAlert } from "react-alert";
+import { useAlert } from "../../../helpers/alert";
 import { useNavigate } from "react-router-dom";
 import {
   getProducts,

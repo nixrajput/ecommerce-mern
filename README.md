@@ -121,7 +121,7 @@ yarn dev
 
 This starts the API server on `http://localhost:4000`. To work on the frontend, run `pnpm start` in the `frontend` folder. The Vite dev server opens the website at `http://localhost:3000` and forwards `/api` requests to the API server. `pnpm run build` in the root folder builds the frontend into `frontend/build`, which the API server serves.
 
-Run the backend tests with `pnpm test`.
+Run the backend tests with `pnpm test`. The first run downloads a MongoDB server binary into `node_modules/.cache` for the database tests.
 
 ## Environment variables
 

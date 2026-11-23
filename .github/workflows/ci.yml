@@ -48,7 +48,7 @@ jobs:
       - if: steps.pm.outputs.pm != 'bun'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: lts/*
+          node-version-file: .nvmrc
           cache: ${{ steps.pm.outputs.pm }}
 
       # This repo's package.json scripts (build/start/dev) shell out to `bun`,

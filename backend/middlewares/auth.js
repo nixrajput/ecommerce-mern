@@ -8,17 +8,21 @@ exports.isAuthenticatedUser = catchAsyncError(async (req, res, next) => {
 
   if (typeof bearerHeader !== "undefined") {
     const bearer = bearerHeader.split(" ");
-    const bearerToken = bearer[1];
-
-    token = bearerToken;
+    const token = bearer[1];
 
     if (!token) {
       return next(new ErrorHandler("Please login to account.", 400));
     }
 
-    const userData = jwt.verify(token, process.env.JWT_SECRET);
+    const userData = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
 
     req.user = await User.findById(userData.id);
+
+    if (!req.user) {
+      return next(new ErrorHandler("Please login to account.", 401));
+    }
 
     next();
   } else {

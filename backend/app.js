@@ -4,14 +4,39 @@ const bodyParser = require("body-parser");
 const fileUpload = require("express-fileupload");
 const path = require("path");
 const cors = require("cors");
+const helmet = require("helmet");
+const { rateLimit } = require("express-rate-limit");
 const errorMiddleware = require("./middlewares/error");
 
 exports.runApp = () => {
   const app = express();
 
+  // Number of proxy hops in front of the app, so rate limits see the client IP.
+  if (process.env.TRUST_PROXY) {
+    app.set("trust proxy", Number(process.env.TRUST_PROXY));
+  }
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          "script-src": ["'self'", "https://js.stripe.com", "https://*.js.stripe.com"],
+          "frame-src": ["https://js.stripe.com", "https://*.js.stripe.com", "https://hooks.stripe.com"],
+          "connect-src": ["'self'", "https://api.stripe.com"],
+          "img-src": ["'self'", "data:", "blob:", "https:"],
+        },
+      },
+    })
+  );
+
+  // The frontend calls the API from the same origin. CORS_ORIGIN is a comma-separated allowlist for other origins.
+  const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
+    : false;
+
   app.use(
     cors({
-      origin: "*",
+      origin: corsOrigins,
       methods: "GET, HEAD, PUT, PATCH, POST, DELETE",
       credentials: true,
       exposedHeaders: ["x-auth-token"],
@@ -23,6 +48,22 @@ exports.runApp = () => {
   app.use(bodyParser.json());
   app.use(cookieParser());
   app.use(fileUpload());
+
+  // Express 5 leaves req.body undefined when no parser ran. The controllers destructure it.
+  app.use((req, res, next) => {
+    req.body ??= {};
+    next();
+  });
+
+  app.use(
+    "/api",
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 1000,
+      standardHeaders: "draft-8",
+      legacyHeaders: false,
+    })
+  );
 
   // API Health Route
   app.route("/health").get(function (req, res) {
@@ -45,16 +86,17 @@ exports.runApp = () => {
 
   app.use(express.static(path.join(__dirname, "../frontend/build"), options));
 
-  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'prod') {
-    app.get("*", (req, res) => {
-      res.sendFile(path.resolve(__dirname, "../frontend/build/index.html"));
-    });
-  }
-
   return app;
 };
 
 exports.closeApp = (app) => {
+  // SPA fallback goes after the API routes, so it does not shadow GET /api/*.
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'prod') {
+    app.get("/{*splat}", (req, res) => {
+      res.sendFile(path.resolve(__dirname, "../frontend/build/index.html"));
+    });
+  }
+
   // Middleware for Errors
   app.use(errorMiddleware);
 };

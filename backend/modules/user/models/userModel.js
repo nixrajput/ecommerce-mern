@@ -56,6 +56,7 @@ const userSchema = new mongoose.Schema({
 
   role: {
     type: String,
+    enum: ["user", "admin"],
     default: "user",
   },
 
@@ -70,18 +71,27 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpire: Date,
 });
 
-userSchema.pre("save", async function (next) {
+userSchema.set("toJSON", {
+  transform: (doc, ret) => {
+    delete ret.password;
+    delete ret.resetPasswordToken;
+    delete ret.resetPasswordExpire;
+    return ret;
+  },
+});
+
+userSchema.pre("save", async function () {
   if (!this.isModified("password")) {
-    next();
+    return;
   }
 
-  this.password = await bcrypt.hash(this.password, 16);
+  this.password = await bcrypt.hash(this.password, 12);
 });
 
 // JWT Token
 userSchema.methods.generateToken = function () {
   const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
+    expiresIn: process.env.JWT_EXPIRES_IN || "1d",
   });
 
   const decodedData = jwt.decode(token);

@@ -5,6 +5,7 @@ const sendEmail = require("../../../utils/sendEmail");
 const crypto = require("crypto");
 const cloudinary = require("cloudinary");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 
 // Register a User
 exports.registerUser = catchAsyncError(async (req, res, next) => {
@@ -62,7 +63,7 @@ exports.loginUser = catchAsyncError(async (req, res, next) => {
   const { email, password } = req.body;
 
   // Email and Password validation
-  if (!email || !password) {
+  if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
     return next(
       new ErrorHandler("Please enter email and password to login.", 401)
     );
@@ -118,7 +119,7 @@ exports.logoutUser = catchAsyncError(async (req, res, next) => {
 exports.forgotPassword = catchAsyncError(async (req, res, next) => {
   const { email } = req.body;
 
-  if (!email) {
+  if (typeof email !== "string" || !email) {
     return next(
       new ErrorHandler(
         "Please enter your email associated with the account.",
@@ -138,13 +139,9 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
 
   await user.save();
 
-  let resetPasswordUrl = `${req.protocol}://${req.get(
-    "host"
-  )}/auth/password/reset/${resetToken}`;
-
-  if (process.env.NODE_ENV !== "PRODUCTION") {
-    resetPasswordUrl = `http://localhost:3000/auth/password/reset/${resetToken}`;
-  }
+  // Built from config, never from the request Host header, so the link cannot point to another site.
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const resetPasswordUrl = `${frontendUrl}/auth/password/reset/${resetToken}`;
 
   const message = `Hello ${user.name},
     \nYour password reset link is :- \n\n ${resetPasswordUrl}.
@@ -192,14 +189,14 @@ exports.resetPassword = catchAsyncError(async (req, res, next) => {
 
   const user = await User.findOne({
     resetPasswordToken,
-    resetPasswordExpire: { $gt: Date.now() },
+    resetPasswordExpire: mongoose.trusted({ $gt: Date.now() }),
   });
 
   if (!user) {
     return next(new ErrorHandler("Token is invalid or expired.", 400));
   }
 
-  if (newP4 !== confirmPassword) {
+  if (newPassword !== confirmPassword) {
     return next(new ErrorHandler("Passwords do not matched.", 400));
   }
 
@@ -313,7 +310,7 @@ exports.updateUserProfile = catchAsyncError(async (req, res, next) => {
 
 // Get All Users -- Admin
 exports.getAllUsers = catchAsyncError(async (req, res, next) => {
-  const users = await User.find();
+  const users = await User.find().select("-token");
   const usersCount = await User.countDocuments();
 
   res.status(200).json({
@@ -325,7 +322,7 @@ exports.getAllUsers = catchAsyncError(async (req, res, next) => {
 
 // Get Custom User Details -- Admin
 exports.getCustomUserDetails = catchAsyncError(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+  const user = await User.findById(req.params.id).select("-token");
 
   if (!user) {
     return next(new ErrorHandler("User not found.", 404));
@@ -389,7 +386,7 @@ exports.deleteUser = catchAsyncError(async (req, res, next) => {
     await cloudinary.v2.uploader.destroy(imageId);
   }
 
-  await user.remove();
+  await user.deleteOne();
 
   res.status(200).json({
     success: true,

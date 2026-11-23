@@ -1,14 +1,19 @@
 const catchAsyncError = require("../../../middlewares/catchAsyncError");
-const stripe = require("stripe")(
-  "sk_test_51JCiUfSDU2GWp7bizlzSkQUVwQItdQGSBP5zg1kbdnZBB8VS5XDZ5kCVgXcW4lbbWjGvLK99vi3kmjR9AZLC7nBF00YaiymMQH"
-);
+const ErrorHandler = require("../../../utils/errorHandler");
+const getStripe = require("../../../utils/stripe");
 
 // Process Payment
 exports.createPayment = catchAsyncError(async (req, res, next) => {
-  const myPayment = await stripe.paymentIntents.create({
-    amount: req.body.amount,
+  const amount = Number(req.body.amount);
+
+  if (!Number.isInteger(amount) || amount <= 0) {
+    return next(new ErrorHandler("Invalid payment amount.", 400));
+  }
+
+  const myPayment = await getStripe().paymentIntents.create({
+    amount,
     currency: "inr",
-    receipt_email: req.body.email,
+    receipt_email: req.user.email,
     metadata: {
       company: "NixLab Shop",
     },

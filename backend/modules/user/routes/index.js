@@ -1,4 +1,5 @@
 const express = require("express");
+const { rateLimit } = require("express-rate-limit");
 const {
   registerUser,
   loginUser,
@@ -20,12 +21,23 @@ const {
 
 const router = express.Router();
 
+// Each instance keeps its own counters, so these routes share one budget per IP.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { success: false, message: "Too many attempts, please try again later." },
+});
+
 // Routes
-router.route("/register").post(registerUser);
-router.route("/login").post(loginUser);
-router.route("/password/forgot").post(forgotPassword);
-router.route("/password/reset/:token").put(resetPassword);
-router.route("/password/update").put(isAuthenticatedUser, updatePassword);
+router.route("/register").post(authLimiter, registerUser);
+router.route("/login").post(authLimiter, loginUser);
+router.route("/password/forgot").post(authLimiter, forgotPassword);
+router.route("/password/reset/:token").put(authLimiter, resetPassword);
+router
+  .route("/password/update")
+  .put(authLimiter, isAuthenticatedUser, updatePassword);
 router.route("/logout").get(logoutUser);
 router.route("/user/me").get(isAuthenticatedUser, getProfileDetails);
 router.route("/user/me/update").put(isAuthenticatedUser, updateUserProfile);

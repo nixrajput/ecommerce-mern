@@ -39,12 +39,18 @@
     "validator": "13.15.35"
   },
   "devDependencies": {
+    "mongodb-memory-server-core": "11.4.0",
     "nodemon": "3.1.14"
   },
   "pnpm": {
     "overrides": {
       "minimatch@>=7.0.0 <11.0.1": "11.0.1",
       "picomatch@<2.3.2": "2.3.2"
+    }
+  },
+  "config": {
+    "mongodbMemoryServer": {
+      "downloadDir": "node_modules/.cache/mongodb-memory-server"
     }
   }
 }

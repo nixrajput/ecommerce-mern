@@ -112,13 +112,23 @@ exports.createNewOrder = catchAsyncError(async (req, res, next) => {
     );
   }
 
-  const order = await Order.create({
-    shippingInfo,
-    ...totals,
-    paymentInfo: { id: paymentIntent.id, status: paymentIntent.status },
-    paidAt: Date.now(),
-    user: req.user._id,
-  });
+  let order;
+
+  try {
+    order = await Order.create({
+      shippingInfo,
+      ...totals,
+      paymentInfo: { id: paymentIntent.id, status: paymentIntent.status },
+      paidAt: Date.now(),
+      user: req.user._id,
+    });
+  } catch (err) {
+    // The unique index on paymentInfo.id catches two requests that both passed the exists() check.
+    if (err.code === 11000) {
+      return next(new ErrorHandler("This payment is already used.", 400));
+    }
+    throw err;
+  }
 
   res.status(200).json({
     success: true,

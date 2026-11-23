@@ -6,6 +6,16 @@ node_modules/
 
 # misc
 *.env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.sqlite
+*.sqlite3
+*.db
+.playwright-mcp/
 .DS_Store
 .env.local
 .env.development.local

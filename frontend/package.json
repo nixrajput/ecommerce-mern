@@ -36,5 +36,6 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "node -e \"require('fs').rmSync('build',{recursive:true,force:true})\""
-  }
+  },
+  "packageManager": "pnpm@12.23.0"
 }

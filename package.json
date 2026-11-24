@@ -1,6 +1,6 @@
 {
   "name": "ecommerce-mern",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "An E-commerce Website developed using MERN stack where user can buy and checkout product with ease and add their review and rating for the products.",
   "main": "./backend/server.js",
   "scripts": {
@@ -42,15 +42,13 @@
     "mongodb-memory-server-core": "11.4.0",
     "nodemon": "3.1.14"
   },
-  "pnpm": {
-    "overrides": {
-      "minimatch@>=7.0.0 <11.0.1": "11.0.1",
-      "picomatch@<2.3.2": "2.3.2"
-    }
-  },
   "config": {
     "mongodbMemoryServer": {
       "downloadDir": "node_modules/.cache/mongodb-memory-server"
     }
-  }
+  },
+  "engines": {
+    "node": "26.x"
+  },
+  "packageManager": "pnpm@12.23.0"
 }

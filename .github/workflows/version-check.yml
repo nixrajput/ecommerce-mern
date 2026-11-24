@@ -24,7 +24,7 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
-          git fetch --no-tags --depth=1 origin "$BASE_REF"
+          git fetch --no-tags origin "$BASE_REF"
           pr=$(jq -r .version package.json)
           base=$(git show "origin/$BASE_REF:package.json" | jq -r .version)
           echo "pr=$pr" >> "$GITHUB_OUTPUT"
@@ -37,7 +37,7 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
-          changed=$(git diff --name-only "origin/$BASE_REF...HEAD")
+          changed=$(git diff --no-renames --name-only "origin/$BASE_REF...HEAD")
           echo "changed files:"; printf '%s\n' "$changed" | sed 's/^/  /'
           total=$(printf '%s\n' "$changed" | grep -c . || true)
           infra=$(printf '%s\n' "$changed" | grep -cE '^(\.github/|\.nvmrc$)' || true)

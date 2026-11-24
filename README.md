@@ -60,7 +60,7 @@ Follow these instructions to get the project up and running on your local machin
 
 You need to have the following software installed on your computer:
 
-- [Node.js](https://nodejs.org/) 20.19 or newer (22.12 or newer on the 22 line). The backend uses Mongoose 9 and the frontend builds with Vite 8.
+- [Node.js](https://nodejs.org/) 26. The backend uses Mongoose 9 and the frontend builds with Vite 8.
 - [Bun](https://bun.sh), [npm](https://www.npmjs.com/), [pnpm](https://pnpm.io/) or [Yarn](https://yarnpkg.com/) package manager
 
 ### Installation

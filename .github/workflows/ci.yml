@@ -39,8 +39,6 @@ jobs:
 
       - if: steps.pm.outputs.pm == 'pnpm'
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-        with:
-          version: 9.15.9
       - if: steps.pm.outputs.pm == 'bun'
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:

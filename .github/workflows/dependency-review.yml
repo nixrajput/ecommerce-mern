@@ -1,7 +1,7 @@
 name: Dependency Review
 
 # Flags vulnerable or disallowed-license dependencies introduced by a PR before
-# they merge. Replaces Dependabot's alerting with a hard PR gate.
+# they merge. Dependabot update PRs are off, so this is the hard PR gate.
 on:
   pull_request:
     branches: ["master"]
